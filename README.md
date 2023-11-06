@@ -1,2 +1,2 @@
 # presigner
-transaction presigner to use with safe
+multisig transaction presigner made easy
