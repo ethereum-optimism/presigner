@@ -119,6 +119,33 @@ go run presigner.go \
   simulate
 ```
 
+If the simulation succeeds, it will also print a cheat sheet to execute the transaction in the network, i.e.:
+
+```bash
+transaction now can be sent to network with:
+
+- - 8< - -
+
+go run presigner.go \
+    -json-file tx/2023-11-07-goerli-pause-6.json \
+    -private-key $EXECUTORKEY \
+    execute
+
+- - or - -
+
+SAFE_ADDR=0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e
+CALLDATA=0x00000000000000000000000000000000000000000000000000000000000000000000000000000000
+EXECUTORKEY=********
+cast send \
+    --rpc-url https://ethereum-goerli.publicnode.com \
+    --chain 5 \
+    --private-key $EXECUTORKEY \
+    $SAFE_ADDR \
+    $CALLDATA
+
+- - 8< - -
+```
+
 ### execute
 
 Execute the transaction in the network, example:
