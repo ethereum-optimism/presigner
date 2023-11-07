@@ -126,6 +126,7 @@ transaction now can be sent to network with:
 
 - - 8< - -
 
+EXECUTORKEY=********
 go run presigner.go \
     -json-file tx/2023-11-07-goerli-pause-6.json \
     -private-key $EXECUTORKEY \
