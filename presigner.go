@@ -20,16 +20,20 @@ type TxSignatures struct {
 }
 
 type TxState struct {
-	ChainId    string         `json:"chain_id"`
-	RpcUrl     string         `json:"rpc_url"`
-	CreatedAt  string         `json:"created_at"`
-	SafeAddr   string         `json:"safe_addr"`
-	SafeNonce  string         `json:"safe_nonce"`
-	TargetAddr string         `json:"target_addr"`
-	ScriptName string         `json:"script_name"`
-	Data       string         `json:"data"`
-	Signatures []TxSignatures `json:"signatures"`
-	Calldata   string         `json:"calldata"`
+	ChainId    string `json:"chain_id"`
+	RpcUrl     string `json:"rpc_url"`
+	CreatedAt  string `json:"created_at"`
+	SafeAddr   string `json:"safe_addr"`
+	SafeNonce  string `json:"safe_nonce"`
+	TargetAddr string `json:"target_addr"`
+	ScriptName string `json:"script_name"`
+	Data       string `json:"data"`
+
+	// populated by sign
+	Signatures []TxSignatures `json:"signatures,omitempty"`
+
+	// populated by simulate
+	Calldata string `json:"calldata,omitempty"`
 }
 
 func main() {
