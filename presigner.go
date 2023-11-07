@@ -29,6 +29,7 @@ type TxState struct {
 	ScriptName string         `json:"script_name"`
 	Data       string         `json:"data"`
 	Signatures []TxSignatures `json:"signatures"`
+	Calldata   string         `json:"calldata"`
 }
 
 func main() {
@@ -49,7 +50,7 @@ func main() {
 	var targetAddr string
 
 	flag.StringVar(&chainId, "chain", "1", "Chain ID")
-	flag.StringVar(&rpcUrl, "rpc-url", "", "RPC URL (defaults to https://eth.llamarpc.com)")
+	flag.StringVar(&rpcUrl, "rpc-url", "", "RPC URL (default to \"https://eth.llamarpc.com)\"")
 	flag.StringVar(&safeAddr, "safe-addr", "", "Safe address")
 	flag.StringVar(&safeNonce, "safe-nonce", "", "Safe nonce")
 	flag.StringVar(&targetAddr, "target-addr", "", "Target address")
@@ -198,6 +199,11 @@ func main() {
 		}
 
 		signer, sig, err := extractSignatures(outBuffer)
+		if err != nil {
+			log.Printf("error extracting signatures: %v\n", err)
+			os.Exit(1)
+		}
+
 		var found bool
 		for _, s := range tx.Signatures {
 			if s.Signer == signer {
@@ -247,6 +253,8 @@ func main() {
 
 		if strings.Contains(string(outBuffer), "Script ran successfully.") {
 			log.Printf("signatures are valid and tx is ready to be executed\n")
+		} else {
+			os.Exit(255) // succeeded but signatures are invalid
 		}
 	} else if cmd == "execute" || cmd == "simulate" {
 		tx := readTxState(jsonFile)
@@ -299,11 +307,50 @@ func main() {
 			}
 		}
 
-		_, _, err := run(workdir, "forge", env, "", execArgs...)
+		outBuffer, _, err := run(workdir, "forge", env, "", execArgs...)
 		if err != nil {
 			log.Printf("error running forge: %v\n", err)
 			os.Exit(1)
 		}
+		calldata, err := extractCalldata(outBuffer)
+		if err != nil {
+			log.Printf("error extracting calldata: %v\n", err)
+			os.Exit(1)
+		}
+		tx.Calldata = calldata
+		log.Printf("added calldata\n")
+		writeTxState(jsonFile, tx)
+
+		presignerCmd := fmt.Sprintf(`go run presigner.go \
+    -json-file %s \
+    -private-key $EXECUTORKEY \
+    execute`, jsonFile)
+		castCmd := fmt.Sprintf(
+			`SAFE_ADDR=%s
+CALLDATA=%s
+EXECUTORKEY=********
+cast send \
+    --rpc-url %s \
+    --chain %s \
+    --private-key $EXECUTORKEY \
+    $SAFE_ADDR \
+    $CALLDATA`,
+			tx.SafeAddr, calldata, useRpcUrl, tx.ChainId)
+
+		log.Printf(`
+
+transaction now can be sent to network with:
+
+- - 8< - -
+
+%s
+
+- - or - -
+
+%s
+
+- - 8< - - 
+`, highlight(presignerCmd), highlight(castCmd))
 	} else {
 		log.Println("unknown command, use one of: create, nonce, sign, verify, simulate, execute")
 		flag.PrintDefaults()
@@ -359,6 +406,18 @@ func extractNonce(buffer []byte) (string, error) {
 	return matches[1], nil
 }
 
+func extractCalldata(buffer []byte) (string, error) {
+	exp := regexp.MustCompile(".*&rawFunctionInput=(.*?)\n")
+	matches := exp.FindStringSubmatch(string(buffer))
+	if len(matches) != 2 {
+		return "", fmt.Errorf("invalid output from forge")
+	}
+	if matches[1] == "" {
+		return "", fmt.Errorf("invalid output from forge")
+	}
+	return matches[1], nil
+}
+
 func extractSignatures(buffer []byte) (string, string, error) {
 	exp := regexp.MustCompile(".*?\nData: (.*?)\nSigner: (.*?)\nSignature: (.*?)\n")
 	matches := exp.FindStringSubmatch(string(buffer))
@@ -402,7 +461,7 @@ func run(workdir, name string, env []string, in string, args ...string) ([]byte,
 		stdinpipe = stdin
 	}
 
-	fmt.Println("running:", cmd.String())
+	fmt.Println("running:", obfuscateCmdString(cmd.String()))
 	err := cmd.Start()
 
 	if in != "" {
@@ -413,4 +472,27 @@ func run(workdir, name string, env []string, in string, args ...string) ([]byte,
 	cmd.Wait()
 
 	return outBuffer.Bytes(), errBuffer.Bytes(), err
+}
+
+func obfuscateCmdString(s string) string {
+	output := ""
+	words := strings.Split(s, " ")
+	lastWord := ""
+	for _, w := range words {
+		if strings.HasSuffix(lastWord, "-private-key") ||
+			strings.HasSuffix(lastWord, "-mnemonic") ||
+			strings.HasSuffix(lastWord, "-hd-paths") {
+			w = "********"
+		}
+		if output != "" {
+			output += " "
+		}
+		output += w
+		lastWord = w
+	}
+	return output
+}
+
+func highlight(s string) string {
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 36, s)
 }
