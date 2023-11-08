@@ -27,26 +27,26 @@ It stores state in self-contained JSON files that can be easily stored in secret
 
 ```json
 {
-  "chain_id": "5",
-  "created_at": "2023-11-06T14:53:30-08:00",
-  "data": "0x1901c0d0e680d49115459ede72891964cf5adc2cf1930f57e7d8f7cf2408ed63d6ad81b0007322861e475d3f147da54ca8278d8f2850deaf5c736817f679a65332fc",
-  "rpc_url": "https://ethereum-goerli.publicnode.com",
-  "safe_addr": "0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e",
-  "safe_nonce": "3",
-  "script_name": "CallPause",
-  "signatures": [
-    {
-      "signer": "0x1234567890123456789012345678901234567890",
-      "signature": "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    },
-    {
-      "signer": "0x1234567890123456789012345678901234567891",
-      "signature": "2111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    }
-  ],
-  "target_addr": "0x95B78e7A9f856161B8fE255Cf92C38d693aC6f5e"
+    "chain_id": "5",
+    "created_at": "2023-11-06T14:53:30-08:00",
+    "data": "0x1901c0d0e680d49115459ede72891964cf5adc2cf1930f57e7d8f7cf2408ed63d6ad81b0007322861e475d3f147da54ca8278d8f2850deaf5c736817f679a65332fc",
+    "rpc_url": "https://ethereum-goerli.publicnode.com",
+    "safe_addr": "0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e",
+    "safe_nonce": "3",
+    "script_name": "CallPause",
+    "signatures": [
+        {
+            "signer": "0x1234567890123456789012345678901234567890",
+            "signature": "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+            "signer": "0x1234567890123456789012345678901234567891",
+            "signature": "2111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+        }
+    ],
+    "target_addr": "0x95B78e7A9f856161B8fE255Cf92C38d693aC6f5e"
 }
-  ```
+```
 
 ### Commands
 
@@ -56,8 +56,8 @@ Verifies the current nonce of a safe, example:
 
 ```bash
 go run presigner.go \
-  -safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
-  nonce
+    -safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
+    nonce
 ```
 
 #### create
@@ -66,14 +66,14 @@ Creates a new transaction to be signed, example:
 
 ```bash
 go run presigner.go \
-  -json-file tx/2023-11-06-goerli-pause-3.json \
-  -chain 5 \
-  -rpc-url https://ethereum-goerli.publicnode.com \
-  -target-addr 0xfAF96f23026CA4863B6dcA30204aD5D2675738b8 \
-  -safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
-  -safe-nonce 3 \
-  create
-      
+    -json-file tx/2023-11-06-goerli-pause-3.json \
+    -chain 5 \
+    -rpc-url https://ethereum-goerli.publicnode.com \
+    -target-addr 0xfAF96f23026CA4863B6dcA30204aD5D2675738b8 \
+    -safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
+    -safe-nonce 3 \
+    create
+
 2023/11/06 13:12:32 saved: tx/2023-11-06-goerli-pause-3.json
 ```
 
@@ -85,9 +85,9 @@ Signs a transaction previously created, example:
 
 ```bash
 go run presigner.go \
-  -json-file tx/2023-11-06-goerli-pause-3.json \
-  -private-key 0000000000000000000000000000000000000000000000000000000000000000 \
-  sign
+    -json-file tx/2023-11-06-goerli-pause-3.json \
+    -private-key 0000000000000000000000000000000000000000000000000000000000000000 \
+    sign
 
 2023/11/06 13:12:42 added signature for 0x1234567890123456789012345678901234567890
 ```
@@ -105,8 +105,8 @@ Verifies if a transaction previously created has valid signatures to be executed
 
 ```bash
 go run presigner.go \
-  -json-file tx/2023-11-06-goerli-pause-3.json \
-  verify
+    -json-file tx/2023-11-06-goerli-pause-3.json \
+    verify
 ```
 
 ### simulate
@@ -115,8 +115,8 @@ Simulate the transaction execution in a forked VM, example:
 
 ```bash
 go run presigner.go \
-  -json-file tx/2023-11-06-goerli-pause-3.json \
-  simulate
+    -json-file tx/2023-11-06-goerli-pause-3.json \
+    simulate
 ```
 
 If the simulation succeeds, it will also print a cheat sheet to execute the transaction in the network, i.e.:
@@ -153,9 +153,9 @@ Execute the transaction in the network, example:
 
 ```bash
 go run presigner.go \
-  -json-file tx/2023-11-06-goerli-pause-3.json \
-  -private-key 0000000000000000000000000000000000000000000000000000000000000000 \
-  execute
+    -json-file tx/2023-11-06-goerli-pause-3.json \
+    -private-key 0000000000000000000000000000000000000000000000000000000000000000 \
+    execute
 ```
 
 Note you need a private-key to execute the transaction, but it does not need to be a signer.
