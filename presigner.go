@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-type TxSignatures struct {
+type TxSignature struct {
 	Signer    string `json:"signer"`
 	Signature string `json:"signature"`
 }
@@ -31,7 +31,7 @@ type TxState struct {
 	Data       string `json:"data"`
 
 	// populated by sign
-	Signatures []TxSignatures `json:"signatures,omitempty"`
+	Signatures []TxSignature `json:"signatures,omitempty"`
 
 	// populated by simulate
 	Calldata string `json:"calldata,omitempty"`
@@ -219,7 +219,7 @@ func main() {
 			}
 		}
 		if !found {
-			tx.Signatures = append(tx.Signatures, TxSignatures{
+			tx.Signatures = append(tx.Signatures, TxSignature{
 				Signer:    signer,
 				Signature: sig,
 			})

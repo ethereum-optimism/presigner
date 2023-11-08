@@ -147,6 +147,17 @@ cast send \
 - - 8< - -
 ```
 
+And also a oneliner encoded in base64, i.e.:
+```bash
+to run oneliner:
+    /bin/bash <(base64 -d -i tx/2023-11-07-goerli-pause-8.sh.b64) --rpc-url https://ethereum-goerli.publicnode.com
+```
+
+To double-check the oneliner script, just do:
+```bash
+    base64 -d -i tx/2023-11-07-goerli-pause-7.sh.b64
+```
+
 ### execute
 
 Execute the transaction in the network, example:
