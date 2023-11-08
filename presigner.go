@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -88,7 +89,7 @@ func main() {
 
 	if cmd == "nonce" {
 		if safeAddr == "" {
-			log.Println("missing one of the required create parameter: safe-addr")
+			log.Println("missing one of the required nonce parameter: safe-addr")
 			flag.PrintDefaults()
 			os.Exit(1)
 		}
@@ -176,7 +177,7 @@ func main() {
 			options++
 		}
 		if options != 1 {
-			log.Printf("one (and only one) of -private-key, -ledger, -mnemonic must be set")
+			log.Printf("one (and only one) of --private-key, --ledger, --mnemonic must be set")
 			os.Exit(1)
 		}
 
@@ -276,7 +277,7 @@ func main() {
 				options++
 			}
 			if options != 1 {
-				log.Printf("one (and only one) of -private-key, -ledger must be set for execution")
+				log.Printf("one (and only one) of --private-key, --ledger must be set for execution")
 				os.Exit(1)
 			}
 		}
@@ -325,12 +326,34 @@ func main() {
 		log.Printf("added calldata\n")
 		writeTxState(jsonFile, tx)
 
-		presignerCmd := fmt.Sprintf(`go run presigner.go \
-    -json-file %s \
-    -private-key $EXECUTORKEY \
+		printExecuteInstructions(jsonFile, tx, useRpcUrl)
+
+		onelinerName := strings.ReplaceAll(jsonFile, ".json", ".sh.b64")
+		createOneLiner(onelinerName, tx, useRpcUrl)
+
+		oneliner := fmt.Sprintf("/bin/bash <(base64 -d -i %s) --rpc-url %s", onelinerName, useRpcUrl)
+
+		log.Printf(`
+
+to run oneliner:
+    %s
+
+`, highlight(oneliner))
+
+	} else {
+		log.Println("unknown command, use one of: create, nonce, sign, verify, simulate, execute")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+}
+
+func printExecuteInstructions(jsonFile string, tx *TxState, useRpcUrl string) {
+	presignerCmd := fmt.Sprintf(`go run presigner.go \
+    --json-file %s \
+    --private-key $EXECUTORKEY \
     execute`, jsonFile)
-		castCmd := fmt.Sprintf(
-			`SAFE_ADDR=%s
+	castCmd := fmt.Sprintf(
+		`SAFE_ADDR=%s
 CALLDATA=%s
 EXECUTORKEY=********
 cast send \
@@ -339,9 +362,9 @@ cast send \
     --private-key $EXECUTORKEY \
     $SAFE_ADDR \
     $CALLDATA`,
-			tx.SafeAddr, calldata, useRpcUrl, tx.ChainId)
+		tx.SafeAddr, tx.Calldata, useRpcUrl, tx.ChainId)
 
-		log.Printf(`
+	log.Printf(`
 
 transaction now can be sent to network with:
 
@@ -354,25 +377,65 @@ transaction now can be sent to network with:
 %s
 
 - - 8< - - 
-`, highlight(presignerCmd), highlight(castCmd))
-	} else {
-		log.Println("unknown command, use one of: create, nonce, sign, verify, simulate, execute")
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
+`,
+		highlight(presignerCmd), highlight(castCmd))
+}
+
+func createOneLiner(onelinerName string, tx *TxState, url string) {
+	contents := fmt.Sprintf(`
+echo -n "checking for rust... "
+RUST_VERSION=$(rustc -V 2> /dev/null || echo none)
+echo $RUST_VERSION
+if [ "$x" = "none" ]; then
+  echo "install rust with:"
+  echo "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+  exit 1
+fi
+
+echo -n "checking for cast... "
+CAST_VERSION=$(cast -V 2> /dev/null || echo none)
+echo $CAST_VERSION
+if [ "$x" = "none" ]; then
+  echo "install cast with:"
+  echo "curl -L https://foundry.paradigm.xyz | bash && foundryup"
+  exit 1
+fi
+
+
+SAFE_ADDR=%s
+CALLDATA=%s
+CHAIN_ID=%s
+
+CAST_CMD="cast send --chain $CHAIN_ID $SAFE_ADDR $CALLDATA $*"
+
+echo calling: $CAST_CMD
+echo "- - - press ENTER to continue - - -"
+read
+
+$CAST_CMD
+`, tx.SafeAddr, tx.Calldata, tx.ChainId)
+
+	base64Encoded := make([]byte, base64.StdEncoding.EncodedLen(len(contents)))
+	base64.StdEncoding.Encode(base64Encoded, []byte(contents))
+	writeFile(onelinerName, base64Encoded)
 }
 
 func writeTxState(file string, tx *TxState) {
-	exists := existFile(file)
-	if exists {
-		log.Printf("file %s already exists, overwriting\n", file)
-	}
 	jsonContents, err := json.Marshal(tx)
 	if err != nil {
 		log.Println("error marshalling tx state")
 		os.Exit(1)
 	}
-	os.WriteFile(file, jsonContents, 0600)
+	writeFile(file, jsonContents)
+}
+
+func writeFile(file string, s []byte) {
+	exists := existFile(file)
+	if exists {
+		log.Printf("file %s already exists, overwriting\n", file)
+	}
+
+	os.WriteFile(file, s, 0600)
 	log.Printf("saved: %s\n", file)
 }
 

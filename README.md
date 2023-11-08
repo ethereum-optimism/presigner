@@ -56,7 +56,7 @@ Verifies the current nonce of a safe, example:
 
 ```bash
 go run presigner.go \
-    -safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
+    --safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
     nonce
 ```
 
@@ -66,12 +66,12 @@ Creates a new transaction to be signed, example:
 
 ```bash
 go run presigner.go \
-    -json-file tx/2023-11-06-goerli-pause-3.json \
-    -chain 5 \
-    -rpc-url https://ethereum-goerli.publicnode.com \
-    -target-addr 0xfAF96f23026CA4863B6dcA30204aD5D2675738b8 \
-    -safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
-    -safe-nonce 3 \
+    --json-file tx/2023-11-06-goerli-pause-3.json \
+    --chain 5 \
+    --rpc-url https://ethereum-goerli.publicnode.com \
+    --target-addr 0xfAF96f23026CA4863B6dcA30204aD5D2675738b8 \
+    --safe-addr 0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e \
+    --safe-nonce 3 \
     create
 
 2023/11/06 13:12:32 saved: tx/2023-11-06-goerli-pause-3.json
@@ -85,8 +85,8 @@ Signs a transaction previously created, example:
 
 ```bash
 go run presigner.go \
-    -json-file tx/2023-11-06-goerli-pause-3.json \
-    -private-key 0000000000000000000000000000000000000000000000000000000000000000 \
+    --json-file tx/2023-11-06-goerli-pause-3.json \
+    --private-key 0000000000000000000000000000000000000000000000000000000000000000 \
     sign
 
 2023/11/06 13:12:42 added signature for 0x1234567890123456789012345678901234567890
@@ -105,7 +105,7 @@ Verifies if a transaction previously created has valid signatures to be executed
 
 ```bash
 go run presigner.go \
-    -json-file tx/2023-11-06-goerli-pause-3.json \
+    --json-file tx/2023-11-06-goerli-pause-3.json \
     verify
 ```
 
@@ -115,7 +115,7 @@ Simulate the transaction execution in a forked VM, example:
 
 ```bash
 go run presigner.go \
-    -json-file tx/2023-11-06-goerli-pause-3.json \
+    --json-file tx/2023-11-06-goerli-pause-3.json \
     simulate
 ```
 
@@ -128,8 +128,8 @@ transaction now can be sent to network with:
 
 EXECUTORKEY=********
 go run presigner.go \
-    -json-file tx/2023-11-07-goerli-pause-6.json \
-    -private-key $EXECUTORKEY \
+    --json-file tx/2023-11-07-goerli-pause-6.json \
+    --private-key $EXECUTORKEY \
     execute
 
 - - or - -
@@ -153,8 +153,8 @@ Execute the transaction in the network, example:
 
 ```bash
 go run presigner.go \
-    -json-file tx/2023-11-06-goerli-pause-3.json \
-    -private-key 0000000000000000000000000000000000000000000000000000000000000000 \
+    --json-file tx/2023-11-06-goerli-pause-3.json \
+    --private-key 0000000000000000000000000000000000000000000000000000000000000000 \
     execute
 ```
 
