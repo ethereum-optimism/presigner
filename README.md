@@ -20,10 +20,15 @@ make deps
 
 This tool is used to create and sign transactions for multisig safe calls.
 
-The transactions are created using [Solidity script and Forge](https://book.getfoundry.sh/tutorials/solidity-scripting).
-It stores state in self-contained JSON files that can be easily stored in secret vaults for later use.
+The transactions are created and verified using [solidity scripting](https://book.getfoundry.sh/tutorials/solidity-scripting) by calling
+the actual [safe contract](https://github.com/safe-global/safe-contracts/tree/main/contracts) functions.
+It stores state in a single self-contained JSON file.
 
-### Format
+Once the transaction is fully signed, the `simulate` command produces a oneliner
+shell script encoded in Base64 that can be easily stored in secret vaults for later use.
+The onliner has dependency only on `cast` ([from Foundry](https://book.getfoundry.sh/reference/cast/cast-send)).
+
+### File format
 
 ```json
 {
