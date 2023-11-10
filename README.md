@@ -127,40 +127,37 @@ go run presigner.go \
 If the simulation succeeds, it will also print a cheat sheet to execute the transaction in the network, i.e.:
 
 ```bash
-transaction now can be sent to network with:
-
 - - 8< - -
 
 EXECUTORKEY=********
 go run presigner.go \
-    --json-file tx/2023-11-07-goerli-pause-6.json \
+    --json-file tx/2023-11-06-goerli-pause-3.json \
     --private-key $EXECUTORKEY \
     execute
-
-- - or - -
-
-SAFE_ADDR=0xb7b28ac0c0ffab4188826b14d02b17e8b444ed9e
-CALLDATA=0x00000000000000000000000000000000000000000000000000000000000000000000000000000000
-EXECUTORKEY=********
-cast send \
-    --rpc-url https://ethereum-goerli.publicnode.com \
-    --chain 5 \
-    --private-key $EXECUTORKEY \
-    $SAFE_ADDR \
-    $CALLDATA
 
 - - 8< - -
 ```
 
-And also a oneliner encoded in base64, i.e.:
+Or you can use the oneliner script encoded in base64, i.e.:
+
 ```bash
-to run oneliner:
-    /bin/bash <(base64 -d -i tx/2023-11-07-goerli-pause-8.sh.b64) --rpc-url https://ethereum-goerli.publicnode.com
+- - 8< - -
+/bin/bash <(base64 -d -i tx/2023-11-06-goerli-pause-3.sh.b64) --rpc-url https://ethereum-goerli.publicnode.com
+- - 8< - -
 ```
 
-To double-check the oneliner script, just do:
+The onliner script is a single line shell script that uses `cast` to execute the transaction.
+
+The arguments passed to the oneliner script are passed to `cast send`,
+so you can provide keys with `--ledger`, `--private-key` or `--menmonics`,
+override the `--rpc-url`
+and customize gas parameters at time of execution.
+
+To see all options, just run `cast send --help`.
+
+To double-check the contents of the oneliner script, you can use:
 ```bash
-    base64 -d -i tx/2023-11-07-goerli-pause-7.sh.b64
+base64 -d -i tx/2023-11-07-goerli-pause-3.sh.b64
 ```
 
 ### execute
