@@ -1,18 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/ethereum-optimism/presigner/pkg/shell"
 )
 
 type TxSignature struct {
@@ -43,7 +42,7 @@ func main() {
 	var workdir string
 	var scriptName string
 
-	flag.StringVar(&jsonFile, "json-file", "tx/presigner.json", "Json file")
+	flag.StringVar(&jsonFile, "json-file", "", "JSON file")
 	flag.StringVar(&workdir, "workdir", ".", "Directory in which to run the subprocess")
 	flag.StringVar(&scriptName, "script-name", "CallPause", "Script name")
 
@@ -75,17 +74,11 @@ func main() {
 	args := flag.Args()
 
 	if len(args) == 0 {
-		log.Println("no command specified, use one of: create, nonce, sign, verify, simulate, execute")
+		log.Println("no command specified, use one of: create, nonce, sign, merge, verify, simulate, execute")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 	cmd := args[0]
-
-	if workdir == "" || jsonFile == "" || scriptName == "" {
-		log.Println("missing one of the required global parameter: workdir, json-file, script-name")
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
 
 	if cmd == "nonce" {
 		if safeAddr == "" {
@@ -104,18 +97,20 @@ func main() {
 		env := []string{
 			"SAFE_ADDR=" + safeAddr,
 		}
-
-		_, _, err := run(workdir, "forge", env, "", "script",
-			scriptName,
-			"--sig", "nonce()",
-			"--rpc-url", rpcUrl,
-			"--chain-id", chainId,
-			"--via-ir")
-
+		outBuffer, _, err := shell.Run(workdir, "cast", env, "", true,
+			"call",
+			safeAddr,
+			"nonce()",
+			"--rpc-url", rpcUrl)
 		if err != nil {
 			log.Printf("error running forge: %v\n", err)
 			os.Exit(1)
 		}
+
+		outBuffer, _, err = shell.Run(workdir, "cast", env, string(outBuffer), true,
+			"--to-dec")
+		fmt.Println(strings.TrimSpace(string(outBuffer)))
+
 	} else if cmd == "create" {
 		if safeAddr == "" || targetAddr == "" {
 			log.Println("missing one of the required create parameter: safe-addr, target-addr")
@@ -136,7 +131,8 @@ func main() {
 			"TARGET_ADDR=" + targetAddr,
 		}
 
-		outBuffer, _, err := run(workdir, "forge", env, "", "script",
+		outBuffer, _, err := shell.Run(workdir, "forge", env, "", false,
+			"script",
 			scriptName,
 			"--sig", "sign()",
 			"--rpc-url", rpcUrl,
@@ -163,6 +159,10 @@ func main() {
 			ScriptName: scriptName,
 			Data:       extractData(outBuffer),
 			Signatures: nil,
+		}
+
+		if jsonFile == "" {
+			jsonFile = fmt.Sprintf("tx/draft-%s.json", safeNonce)
 		}
 		writeTxState(jsonFile, tx)
 	} else if cmd == "sign" {
@@ -196,7 +196,7 @@ func main() {
 		signingFlags = append(signingFlags, "-hd-paths", hdPath)
 		signingFlags = append(signingFlags, "-workdir", workdir)
 
-		outBuffer, _, err := run(workdir, "eip712sign", []string{}, tx.Data+"\n", signingFlags...)
+		outBuffer, _, err := shell.Run(workdir, "eip712sign", []string{}, tx.Data+"\n", false, signingFlags...)
 
 		if err != nil {
 			log.Printf("error running eip712sign: %v\n", err)
@@ -225,6 +225,9 @@ func main() {
 			})
 			log.Printf("added signature for %s\n", signer)
 		}
+		if jsonFile == "" || (strings.HasPrefix(jsonFile, "tx/draft-") && strings.HasSuffix(jsonFile, ".json")) {
+			jsonFile = fmt.Sprintf("tx/draft-%s.signer-%s.json", tx.SafeNonce, signer)
+		}
 		writeTxState(jsonFile, tx)
 	} else if cmd == "verify" {
 		tx := readTxState(jsonFile)
@@ -245,7 +248,8 @@ func main() {
 		if rpcUrl != "" {
 			useRpcUrl = rpcUrl
 		}
-		outBuffer, _, err := run(workdir, "forge", env, "", "script",
+		outBuffer, _, err := shell.Run(workdir, "forge", env, "", false,
+			"script",
 			tx.ScriptName,
 			"--sig", "verify(bytes)", signatures,
 			"--rpc-url", useRpcUrl,
@@ -261,6 +265,49 @@ func main() {
 		} else {
 			os.Exit(255) // succeeded but signatures are invalid
 		}
+	} else if cmd == "merge" {
+		tx := readTxState(jsonFile)
+
+		signatures := make(map[string]string, len(tx.Signatures))
+		for _, s := range tx.Signatures {
+			signatures[s.Signer] = s.Signature
+		}
+
+		for _, otherFile := range args[1:] {
+			otherTx := readTxState(otherFile)
+			if otherTx.SafeAddr != tx.SafeAddr {
+				log.Printf("safe addr mismatch for file: %s\n", otherFile)
+				log.Printf("   %s != %s\n", otherTx.SafeAddr, tx.SafeAddr)
+				os.Exit(1)
+			}
+			if otherTx.TargetAddr != tx.TargetAddr {
+				log.Printf("target addr mismatch for file: %s\n", otherFile)
+				log.Printf("   %s != %s\n", otherTx.TargetAddr, tx.TargetAddr)
+				os.Exit(1)
+			}
+			if otherTx.Data != tx.Data {
+				log.Printf("data mismatch for file: %s\n", otherFile)
+				log.Printf("   %s != %s\n", otherTx.Data, tx.Data)
+				os.Exit(1)
+			}
+			if otherTx.SafeNonce != tx.SafeNonce {
+				log.Printf("nonce mismatch for file: %s\n", otherFile)
+				log.Printf("   %s != %s\n", otherTx.SafeNonce, tx.SafeNonce)
+				os.Exit(1)
+			}
+
+			for _, s := range otherTx.Signatures {
+				signatures[s.Signer] = s.Signature
+			}
+		}
+
+		newSigs := make([]TxSignature, 0, len(signatures))
+		for signer, sig := range signatures {
+			newSigs = append(newSigs, TxSignature{signer, sig})
+		}
+		tx.Signatures = newSigs
+
+		writeTxState(jsonFile, tx)
 	} else if cmd == "execute" || cmd == "simulate" {
 		tx := readTxState(jsonFile)
 		if len(tx.Signatures) == 0 {
@@ -312,36 +359,48 @@ func main() {
 			}
 		}
 
-		outBuffer, _, err := run(workdir, "forge", env, "", execArgs...)
+		outBuffer, _, err := shell.Run(workdir, "forge", env, "", false, execArgs...)
 		if err != nil {
 			log.Printf("error running forge: %v\n", err)
 			os.Exit(1)
 		}
-		calldata, err := extractCalldata(outBuffer)
-		if err != nil {
-			log.Printf("error extracting calldata: %v\n", err)
-			os.Exit(1)
+
+		if strings.Contains(string(outBuffer), "Script ran successfully.") {
+			log.Printf("simulation succeeded\n")
+		} else {
+			os.Exit(255) // simulation failed
 		}
-		tx.Calldata = calldata
-		log.Printf("added calldata\n")
-		writeTxState(jsonFile, tx)
 
-		printExecuteInstructions(jsonFile, tx, useRpcUrl)
+		if cmd == "simulate" {
+			if jsonFile == "" || (strings.HasPrefix(jsonFile, "tx/draft-") && strings.HasSuffix(jsonFile, ".json")) {
+				jsonFile = fmt.Sprintf("tx/ready-%s.json", tx.SafeNonce)
+			}
 
-		onelinerName := strings.ReplaceAll(jsonFile, ".json", ".sh.b64")
-		createOneLiner(onelinerName, tx, useRpcUrl)
+			calldata, err := extractCalldata(outBuffer)
+			if err != nil {
+				log.Printf("error extracting calldata: %v\n", err)
+				os.Exit(1)
+			}
+			tx.Calldata = calldata
+			log.Printf("added calldata\n")
+			writeTxState(jsonFile, tx)
 
-		oneliner := fmt.Sprintf("/bin/bash <(base64 -d -i %s) --rpc-url %s", onelinerName, useRpcUrl)
+			printExecuteInstructions(jsonFile, tx, useRpcUrl)
 
-		log.Printf(`
+			onelinerName := strings.ReplaceAll(jsonFile, ".json", ".sh.b64")
+			createOneLiner(onelinerName, tx)
+
+			oneliner := fmt.Sprintf("/bin/bash <(base64 -d -i %s) --rpc-url %s", onelinerName, useRpcUrl)
+
+			log.Printf(`
 
 to run oneliner:
     %s
 
-`, highlight(oneliner))
-
+`, shell.Highlight(oneliner))
+		}
 	} else {
-		log.Println("unknown command, use one of: create, nonce, sign, verify, simulate, execute")
+		log.Println("unknown command, use one of: create, nonce, sign, merge, verify, simulate, execute")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -378,10 +437,10 @@ transaction now can be sent to network with:
 
 - - 8< - - 
 `,
-		highlight(presignerCmd), highlight(castCmd))
+		shell.Highlight(presignerCmd), shell.Highlight(castCmd))
 }
 
-func createOneLiner(onelinerName string, tx *TxState, url string) {
+func createOneLiner(onelinerName string, tx *TxState) {
 	contents := fmt.Sprintf(`
 echo -n "checking for rust... "
 RUST_VERSION=$(rustc -V 2> /dev/null || echo none)
@@ -409,15 +468,16 @@ CHAIN_ID=%s
 CAST_CMD="cast send --chain $CHAIN_ID $SAFE_ADDR $CALLDATA $*"
 
 echo calling: $CAST_CMD
-echo "- - - press ENTER to continue - - -"
+echo "- - - press ENTER to continue or CTRL-C to abort - - -"
 read
 
+echo sending transaction...
 $CAST_CMD
 `, tx.SafeAddr, tx.Calldata, tx.ChainId)
 
 	base64Encoded := make([]byte, base64.StdEncoding.EncodedLen(len(contents)))
 	base64.StdEncoding.Encode(base64Encoded, []byte(contents))
-	writeFile(onelinerName, base64Encoded)
+	shell.WriteFile(onelinerName, base64Encoded)
 }
 
 func writeTxState(file string, tx *TxState) {
@@ -426,24 +486,7 @@ func writeTxState(file string, tx *TxState) {
 		log.Println("error marshalling tx state")
 		os.Exit(1)
 	}
-	writeFile(file, jsonContents)
-}
-
-func writeFile(file string, s []byte) {
-	exists := existFile(file)
-	if exists {
-		log.Printf("file %s already exists, overwriting\n", file)
-	}
-
-	os.WriteFile(file, s, 0600)
-	log.Printf("saved: %s\n", file)
-}
-
-func existFile(file string) bool {
-	if _, err := os.Stat("/path/to/whatever"); err == nil {
-		return true
-	}
-	return false
+	shell.WriteFile(file, jsonContents)
 }
 
 func readTxState(file string) *TxState {
@@ -507,59 +550,4 @@ func extractData(input []byte) string {
 		input = input[:index]
 	}
 	return strings.TrimSpace(string(input))
-}
-
-func run(workdir, name string, env []string, in string, args ...string) ([]byte, []byte, error) {
-	cmd := exec.Command(name, args...)
-	cmd.Dir = workdir
-	cmd.Env = env
-
-	var outBuffer, errBuffer bytes.Buffer
-	cmd.Stdout = io.MultiWriter(os.Stdout, &outBuffer)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &errBuffer)
-
-	var stdinpipe io.WriteCloser
-	if in != "" {
-		stdin, err := cmd.StdinPipe()
-		if err != nil {
-			return nil, nil, err
-		}
-		defer stdin.Close()
-		stdinpipe = stdin
-	}
-
-	fmt.Println("running:", obfuscateCmdString(cmd.String()))
-	err := cmd.Start()
-
-	if in != "" {
-		io.WriteString(stdinpipe, in)
-		stdinpipe.Close()
-	}
-
-	cmd.Wait()
-
-	return outBuffer.Bytes(), errBuffer.Bytes(), err
-}
-
-func obfuscateCmdString(s string) string {
-	output := ""
-	words := strings.Split(s, " ")
-	lastWord := ""
-	for _, w := range words {
-		if strings.HasSuffix(lastWord, "-private-key") ||
-			strings.HasSuffix(lastWord, "-mnemonic") ||
-			strings.HasSuffix(lastWord, "-hd-paths") {
-			w = "********"
-		}
-		if output != "" {
-			output += " "
-		}
-		output += w
-		lastWord = w
-	}
-	return output
-}
-
-func highlight(s string) string {
-	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", 36, s)
 }
