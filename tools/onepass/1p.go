@@ -112,7 +112,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		log.Println("unknown command, use one of: create, nonce, sign, merge, verify, simulate, execute")
+		log.Println("unknown command, use one of: list, pull, push")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
