@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ethereum-optimism/presigner/pkg/shell"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type TxSignature struct {
@@ -74,7 +75,7 @@ func main() {
 	args := flag.Args()
 
 	if len(args) == 0 {
-		log.Println("no command specified, use one of: create, nonce, sign, merge, verify, simulate, execute")
+		log.Println("no command specified, use one of: create, nonce, threshold, owners, sign, merge, verify, simulate, execute")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -110,6 +111,83 @@ func main() {
 		outBuffer, _, err = shell.Run(workdir, "cast", env, string(outBuffer), true,
 			"--to-dec")
 		fmt.Println(strings.TrimSpace(string(outBuffer)))
+
+	} else if cmd == "threshold" {
+		if safeAddr == "" {
+			log.Println("missing one of the required nonce parameter: safe-addr")
+			flag.PrintDefaults()
+			os.Exit(1)
+		}
+
+		if rpcUrl == "" {
+			rpcUrl = "https://eth.llamarpc.com"
+		}
+		if chainId == "" {
+			chainId = "1"
+		}
+
+		env := []string{
+			"SAFE_ADDR=" + safeAddr,
+		}
+		outBuffer, _, err := shell.Run(workdir, "cast", env, "", true,
+			"call",
+			safeAddr,
+			"getThreshold()",
+			"--rpc-url", rpcUrl)
+		if err != nil {
+			log.Printf("error running forge: %v\n", err)
+			os.Exit(1)
+		}
+
+		outBuffer, _, err = shell.Run(workdir, "cast", env, string(outBuffer), true,
+			"--to-dec")
+		fmt.Println(strings.TrimSpace(string(outBuffer)))
+	} else if cmd == "owners" {
+
+		if safeAddr == "" {
+			log.Println("missing one of the required nonce parameter: safe-addr")
+			flag.PrintDefaults()
+			os.Exit(1)
+		}
+
+		if rpcUrl == "" {
+			rpcUrl = "https://eth.llamarpc.com"
+		}
+		if chainId == "" {
+			chainId = "1"
+		}
+
+		env := []string{
+			"SAFE_ADDR=" + safeAddr,
+		}
+		outBuffer, _, err := shell.Run(workdir, "cast", env, "", true,
+			"call",
+			safeAddr,
+			"getOwners()",
+			"--rpc-url", rpcUrl)
+		if err != nil {
+			log.Printf("error running forge: %v\n", err)
+			os.Exit(1)
+		}
+
+		out := strings.TrimSpace(string(outBuffer))
+
+		if !strings.HasPrefix(out, "0x") {
+			log.Println("error running forge: result has invalid format")
+			os.Exit(1)
+		}
+
+		hex := out[2:]
+		if len(hex)%64 != 0 {
+			log.Println("error running forge: result has invalid format")
+			os.Exit(1)
+		}
+
+		// skip first two 64-byte chunks
+		for i := 2 * 64; i < len(hex); i += 64 {
+			addr := common.HexToAddress(hex[i : i+64])
+			fmt.Println(strings.ToLower(addr.String()))
+		}
 
 	} else if cmd == "create" {
 		if safeAddr == "" || targetAddr == "" {
@@ -400,7 +478,7 @@ to run oneliner:
 `, shell.Highlight(oneliner))
 		}
 	} else {
-		log.Println("unknown command, use one of: create, nonce, sign, merge, verify, simulate, execute")
+		log.Println("unknown command, use one of: create, nonce, threshold, owners, sign, merge, verify, simulate, execute")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
