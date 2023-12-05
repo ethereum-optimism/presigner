@@ -70,7 +70,7 @@ func main() {
 			log.Printf("error decoding base64: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println(string(decoded))
+		shell.WriteFile(fmt.Sprintf("%s/%s", path, item), decoded)
 	} else if cmd == "push" {
 		if len(args) != 2 {
 			log.Println("use: push <item>")
