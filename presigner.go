@@ -263,25 +263,61 @@ func main() {
 
 		var signingFlags []string
 		if ledger {
-			signingFlags = append(signingFlags, "-ledger")
+			signingFlags = append(signingFlags, "--ledger")
 		}
 		if mnemonic != "" {
-			signingFlags = append(signingFlags, "-mnemonic", mnemonic)
+			signingFlags = append(signingFlags, "--mnemonic", mnemonic)
 		}
 		if privateKey != "" {
-			signingFlags = append(signingFlags, "-private-key", privateKey)
+			signingFlags = append(signingFlags, "--private-key", privateKey)
 		}
-		signingFlags = append(signingFlags, "-hd-paths", hdPath)
-		signingFlags = append(signingFlags, "-workdir", workdir)
+		signingFlags = append(signingFlags, "--hd-paths", hdPath)
+		signingFlags = append(signingFlags, "--workdir", workdir)
 
-		outBuffer, _, err := shell.Run(workdir, "eip712sign", []string{}, tx.Data+"\n", false, signingFlags...)
+		signingFlagsAddress := append(signingFlags, "--address")
 
+		// read wallet address from ledger
+		outBuffer, _, err := shell.Run(workdir, "eip712sign", []string{}, "", true, signingFlagsAddress...)
+		if err != nil {
+			log.Printf("error running eip712sign: %v\n", err)
+			os.Exit(1)
+		}
+		signer, err := extractSigner(outBuffer)
 		if err != nil {
 			log.Printf("error running eip712sign: %v\n", err)
 			os.Exit(1)
 		}
 
-		signer, sig, err := extractSignatures(outBuffer)
+		log.Println("running simulation")
+
+		useRpcUrl := tx.RpcUrl
+		if rpcUrl != "" {
+			useRpcUrl = rpcUrl
+		}
+
+		env := []string{
+			"SAFE_ADDR=" + tx.SafeAddr,
+			"SAFE_NONCE=" + tx.SafeNonce,
+			"TARGET_ADDR=" + tx.TargetAddr,
+		}
+
+		outBuffer, _, err = shell.Run(workdir, "forge", env, "", false,
+			"script",
+			tx.ScriptName,
+			"--sig", "sign()",
+			"--rpc-url", useRpcUrl,
+			"--chain-id", tx.ChainId,
+			"--sender", signer,
+			"--via-ir")
+
+		// actually send the sign payload
+		outBuffer, _, err = shell.Run(workdir, "eip712sign", []string{}, tx.Data+"\n", false, signingFlags...)
+		if err != nil {
+			log.Printf("error running eip712sign: %v\n", err)
+			os.Exit(1)
+		}
+
+		_, sig, err := extractSignatures(outBuffer)
 		if err != nil {
 			log.Printf("error extracting signatures: %v\n", err)
 			os.Exit(1)
@@ -388,12 +424,13 @@ func main() {
 		writeTxState(jsonFile, tx)
 	} else if cmd == "execute" || cmd == "simulate" {
 		tx := readTxState(jsonFile)
-		if len(tx.Signatures) == 0 {
-			log.Printf("no signatures found\n")
-			os.Exit(1)
-		}
 
 		if cmd == "execute" {
+			if len(tx.Signatures) == 0 {
+				log.Printf("no signatures found\n")
+				os.Exit(1)
+			}
+
 			options := 0
 			if privateKey != "" {
 				options++
@@ -602,6 +639,18 @@ func extractCalldata(buffer []byte) (string, error) {
 	}
 	if matches[1] == "" {
 		return "", fmt.Errorf("invalid output from forge")
+	}
+	return matches[1], nil
+}
+
+func extractSigner(buffer []byte) (string, error) {
+	exp := regexp.MustCompile(".*?\nSigner: (.*?)\n")
+	matches := exp.FindStringSubmatch(string(buffer))
+	if len(matches) != 2 {
+		return "", fmt.Errorf("invalid output from eip712sign")
+	}
+	if matches[1] == "" {
+		return "", fmt.Errorf("invalid output from eip712sign")
 	}
 	return matches[1], nil
 }
