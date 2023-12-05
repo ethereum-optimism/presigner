@@ -20,7 +20,7 @@ deps: install-eip712sign clean-lib forge-deps
 
 .PHONY: install-eip712sign
 install-eip712sign:
-	go install github.com/base-org/eip712sign@v0.0.4
+	go install github.com/felipe-op/eip712sign@v0.1.0
 
 
 ##
@@ -34,7 +34,7 @@ clean-lib:
 forge-deps:
 	forge install --no-git \
 		github.com/foundry-rs/forge-std \
-	 	base-contracts=https://github.com/base-org/contracts@4fee7d0a08b81e4041dd107140d63a55e4e79394 \
+	 	base-contracts=https://github.com/felipe-op/base-contracts@v0.1.0 \
 	 	https://github.com/ethereum-optimism/optimism@57413031bd75f497a5d64f357453d44804a1a77f
 
 ##
