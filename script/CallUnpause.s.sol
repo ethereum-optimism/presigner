@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 import "@base-contracts/script/universal/MultisigBuilder.sol";
 import { IGnosisSafe } from "@eth-optimism-bedrock/scripts/interfaces/IGnosisSafe.sol";
 
-contract CallPause is MultisigBuilder {
+contract CallUnpause is MultisigBuilder {
  
     function _postCheck() internal override view {
         IGnosisSafe safe = IGnosisSafe(_ownerSafe());
@@ -20,7 +20,7 @@ contract CallPause is MultisigBuilder {
             target: _optimismPortalAddr(),
             allowFailure: false,
             callData: abi.encodeCall(
-                Pausable.pause,
+                Pausable.unpause,
                 ()
             )
         });
