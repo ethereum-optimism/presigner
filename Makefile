@@ -16,11 +16,7 @@ install-foundry:
 	~/.foundry/bin/foundryup --commit $(FOUNDRY_COMMIT)
 
 .PHONY: deps
-deps: install-eip712sign clean-lib forge-deps
-
-.PHONY: install-eip712sign
-install-eip712sign:
-	go install github.com/felipe-op/eip712sign@v0.1.0
+deps:  clean-lib forge-deps
 
 
 ##
@@ -34,7 +30,7 @@ clean-lib:
 forge-deps:
 	forge install --no-git \
 		github.com/foundry-rs/forge-std \
-	 	base-contracts=https://github.com/felipe-op/base-contracts@v0.1.0 \
+	 	base-contracts=https://github.com/felipe-op/base-contracts@3e8ff361011db6d9327a869bffcf8aecca4390c3 \
 	 	https://github.com/ethereum-optimism/optimism@57413031bd75f497a5d64f357453d44804a1a77f
 
 ##

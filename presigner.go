@@ -310,7 +310,7 @@ func main() {
 			"--sender", signer,
 			"--via-ir")
 
-		// actually send the sign payload
+		// sign the payload
 		outBuffer, _, err = shell.Run(workdir, "eip712sign", []string{}, tx.Data+"\n", false, signingFlags...)
 		if err != nil {
 			log.Printf("error running eip712sign: %v\n", err)
