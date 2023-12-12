@@ -277,7 +277,7 @@ func main() {
 		signingFlagsAddress := append(signingFlags, "--address")
 
 		// read wallet address from ledger
-		outBuffer, _, err := shell.Run(workdir, "eip712sign", []string{}, "", true, signingFlagsAddress...)
+		outBuffer, _, err := shell.Run(workdir, "eip712sign", []string{}, "", false, signingFlagsAddress...)
 		if err != nil {
 			log.Printf("error running eip712sign: %v\n", err)
 			os.Exit(1)
@@ -644,7 +644,7 @@ func extractCalldata(buffer []byte) (string, error) {
 }
 
 func extractSigner(buffer []byte) (string, error) {
-	exp := regexp.MustCompile(".*?\nSigner: (.*?)\n")
+	exp := regexp.MustCompile(".*?\n?Signer: (.*?)\n")
 	matches := exp.FindStringSubmatch(string(buffer))
 	if len(matches) != 2 {
 		return "", fmt.Errorf("invalid output from eip712sign")
