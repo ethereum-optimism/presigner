@@ -457,24 +457,34 @@ func main() {
 		if rpcUrl != "" {
 			useRpcUrl = rpcUrl
 		}
-		execArgs := []string{"script",
+		var optFlags []string
+		var signingFlags []string
+
+		if ledger {
+			signingFlags = append(signingFlags, "--ledger")
+		}
+		if privateKey != "" {
+			signingFlags = append(signingFlags, "--private-key", privateKey)
+		}
+		if cmd == "execute" {
+			optFlags = append(optFlags,
+				"--broadcast",
+				"--sig", "run(bytes)", signatures)
+		} else if cmd == "simulate" {
+			optFlags = append(optFlags,
+				"--sig", "simulateSigned(bytes)", signatures)
+		}
+
+		execFlags := []string{
+			"script",
 			tx.ScriptName,
-			"--sig", "run(bytes)", signatures,
+
 			"--rpc-url", useRpcUrl,
 			"--chain", tx.ChainId,
 			"--via-ir"}
+		execFlags = append(execFlags, optFlags...)
 
-		if cmd == "execute" {
-			execArgs = append(execArgs, "--broadcast")
-			if ledger {
-				execArgs = append(execArgs, "--ledger")
-			}
-			if privateKey != "" {
-				execArgs = append(execArgs, "--private-key", privateKey)
-			}
-		}
-
-		outBuffer, _, err := shell.Run(workdir, "forge", env, "", false, execArgs...)
+		outBuffer, _, err := shell.Run(workdir, "forge", env, "", false, execFlags...)
 		if err != nil {
 			log.Printf("error running forge: %v\n", err)
 			os.Exit(1)
