@@ -30,7 +30,7 @@ clean-lib:
 forge-deps:
 	forge install --no-git \
 		github.com/foundry-rs/forge-std \
-	 	base-contracts=https://github.com/felipe-op/base-contracts@48b004aa89615d06fa5c51e29b7eb340cd041f8b \
+	 	base-contracts=https://github.com/felipe-op/base-contracts@581773d3013498ceffe039f3384a8a4f4a3ef5d2 \
 	 	https://github.com/ethereum-optimism/optimism@57413031bd75f497a5d64f357453d44804a1a77f
 
 ##
