@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/ethereum-optimism/presigner/pkg/shell"
@@ -47,8 +48,13 @@ func main() {
 		}
 		var j []map[string]interface{}
 		json.Unmarshal(outBuffer, &j)
+		items := make([]string, 0, len(j))
 		for _, jitem := range j {
-			fmt.Println(jitem["title"])
+			items = append(items, strings.TrimSpace(jitem["title"].(string)))
+		}
+		sort.Strings(items)
+		for _, item := range items {
+			fmt.Println(item)
 		}
 	} else if cmd == "pull" {
 		if len(args) != 2 {
