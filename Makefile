@@ -30,7 +30,11 @@ clean-lib:
 forge-deps:
 	forge install --no-git \
 		github.com/foundry-rs/forge-std \
-	 	base-contracts=https://github.com/felipe-op/base-contracts@94507d1bf849f02f037c494e830e69789769d5db \
+		github.com/OpenZeppelin/openzeppelin-contracts@v4.9.3 \
+		github.com/OpenZeppelin/openzeppelin-contracts-upgradeable@v4.7.3 \
+		github.com/rari-capital/solmate@8f9b23f8838670afda0fd8983f2c41e8037ae6bc \
+		github.com/Vectorized/solady@862a0afd3e66917f50e987e91886b9b90c4018a1 \
+	 	base-contracts=https://github.com/base-org/contracts@c2a45d575fbf2a7c41370aaa1e9d47a3f6020576 \
 	 	https://github.com/ethereum-optimism/optimism@57413031bd75f497a5d64f357453d44804a1a77f
 
 ##
