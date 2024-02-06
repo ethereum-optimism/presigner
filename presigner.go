@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -339,7 +340,7 @@ func main() {
 			})
 			log.Printf("added signature for %s\n", signer)
 		}
-		if jsonFile == "" || (strings.HasPrefix(jsonFile, "tx/draft-") && strings.HasSuffix(jsonFile, ".json")) {
+		if jsonFile == "" || (strings.HasPrefix(path.Base(jsonFile), "draft-") && strings.HasSuffix(jsonFile, ".json")) {
 			newName, err := extractFilename(jsonFile, "draft", signer)
 			if err != nil {
 				log.Printf("error generating filename: %v\n", err)
@@ -502,7 +503,7 @@ func main() {
 		}
 
 		if cmd == "simulate" {
-			if jsonFile == "" || (strings.HasPrefix(jsonFile, "tx/draft-") && strings.HasSuffix(jsonFile, ".json")) {
+			if jsonFile == "" || (strings.HasPrefix(path.Base(jsonFile), "draft-") && strings.HasSuffix(jsonFile, ".json")) {
 				newName, err := extractFilename(jsonFile, "ready", "")
 				if err != nil {
 					log.Printf("error generating filename: %v\n", err)
@@ -640,19 +641,21 @@ func readTxState(file string) *TxState {
 }
 
 func extractFilename(filename, newState string, signer string) (string, error) {
-	exp := regexp.MustCompile("(tx/)?(ready|draft)-(.*?)-?(\\d+).json")
-	matches := exp.FindStringSubmatch(filename)
-	if len(matches) < 3 {
+	dir := path.Dir(filename)
+	base := path.Base(filename)
+	exp := regexp.MustCompile("(ready|draft)-(.*?)-?(\\d+).json")
+	matches := exp.FindStringSubmatch(base)
+	if len(matches) < 2 {
 		return "", fmt.Errorf("invalid filename pattern")
 	}
-	if len(matches[3]) > 0 {
+	if len(matches[2]) > 0 {
 		newState = newState + "-"
 	}
 	if len(signer) > 0 {
 		signer = ".signer-" + signer
 	}
-	newName := matches[1] + newState + matches[3] + "-" + matches[4] + signer + ".json"
-	return newName, nil
+	newName := newState + matches[2] + "-" + matches[3] + signer + ".json"
+	return path.Join(dir, newName), nil
 }
 
 func extractNonce(buffer []byte) (string, error) {
