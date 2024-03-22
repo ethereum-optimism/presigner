@@ -7,7 +7,7 @@ import "@base-contracts/script/universal/MultisigBuilder.sol";
 import { IGnosisSafe } from "@eth-optimism-bedrock/scripts/interfaces/IGnosisSafe.sol";
 
 contract CallPause is MultisigBuilder {
- 
+
     function _postCheck() internal override view {
         IGnosisSafe safe = IGnosisSafe(_ownerSafe());
         console.log("Nonce post check", safe.nonce());
@@ -17,7 +17,7 @@ contract CallPause is MultisigBuilder {
         IMulticall3.Call3[] memory calls = new IMulticall3.Call3[](1);
 
         calls[0] = IMulticall3.Call3({
-            target: _optimismPortalAddr(),
+            target: _superchainConfigAddr(),
             allowFailure: false,
             callData: abi.encodeCall(
                 Pausable.pause,
@@ -32,7 +32,7 @@ contract CallPause is MultisigBuilder {
         return vm.envAddress("SAFE_ADDR");
     }
 
-    function _optimismPortalAddr() internal view returns (address) {
+    function _superchainConfigAddr() internal view returns (address) {
         return vm.envAddress("TARGET_ADDR");
     }
 
