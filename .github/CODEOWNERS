@@ -1,1 +1,2 @@
 *   @ethereum-optimism/security-reviewers
+*.go @ethereum-optimism/go-reviewers
