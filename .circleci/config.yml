@@ -27,7 +27,7 @@ jobs:
       - run:
           command: |
             # DO NOT MERGE without merging the eip712sign change
-            go install github.com/ethereum-optimism/eip712sign@k0522-pre-signed-pause
+            go install github.com/ethereum-optimism/eip712sign@v0.0.4
             # test sign --mnemonic
             go run presigner.go \
               --json-file tx/example.json \
