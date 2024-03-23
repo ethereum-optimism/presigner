@@ -20,7 +20,7 @@ jobs:
 
   e2e-test:
     docker:
-      - image: golang:1.21-alpine
+      - image: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:v0.35.0
     working_directory: /go/src/github.com/ethereum-optimism/presigner
     steps:
       - checkout
