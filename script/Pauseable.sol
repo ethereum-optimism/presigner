@@ -2,6 +2,6 @@
 pragma solidity ^0.8.15;
 
 interface Pausable {
-    function pause() external;
+    function pause(string memory _identifier) external;
     function unpause() external;
 }

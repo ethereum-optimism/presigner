@@ -21,7 +21,7 @@ contract CallPause is MultisigBuilder {
             allowFailure: false,
             callData: abi.encodeCall(
                 Pausable.pause,
-                ()
+                ("presigner")
             )
         });
 
