@@ -268,6 +268,7 @@ func main() {
 		var signingFlags []string
 		if ledger {
 			signingFlags = append(signingFlags, "--ledger")
+			signingFlags = append(signingFlags, "--hd-paths", hdPath)
 		}
 		if mnemonic != "" {
 			signingFlags = append(signingFlags, "--mnemonic", mnemonic)
@@ -275,7 +276,6 @@ func main() {
 		if privateKey != "" {
 			signingFlags = append(signingFlags, "--private-key", privateKey)
 		}
-		signingFlags = append(signingFlags, "--hd-paths", hdPath)
 		signingFlags = append(signingFlags, "--workdir", workdir)
 
 		signingFlagsAddress := append(signingFlags, "--address")
