@@ -66,10 +66,13 @@ func main() {
 	var ledger bool
 	var mnemonic string
 	var hdPath string
+	var senderAddr string
 	flag.StringVar(&privateKey, "private-key", "", "Private key to use for signing or executing")
 	flag.BoolVar(&ledger, "ledger", false, "Use ledger device for signing or executing")
 	flag.StringVar(&mnemonic, "mnemonic", "", "Mnemonic to use for signing or executing")
 	flag.StringVar(&hdPath, "hd-paths", "m/44'/60'/0'/0/0", "Hierarchical deterministic derivation path for mnemonic or ledger, for signing or executing")
+	flag.StringVar(&senderAddr, "sender-addr", "", "Address of the --sender to pass to forge")
+
 
 	flag.Parse()
 
@@ -283,10 +286,14 @@ func main() {
 			log.Printf("error running eip712sign: %v\n", err)
 			os.Exit(1)
 		}
-		signer, err := extractSigner(outBuffer)
-		if err != nil {
-			log.Printf("error running eip712sign: %v\n", err)
-			os.Exit(1)
+		signer := senderAddr
+		if signer == "" {
+			var err error
+			signer, err = extractSigner(outBuffer)
+			if err != nil {
+				log.Printf("error running eip712sign: %v\n", err)
+				os.Exit(1)
+			}
 		}
 
 		log.Println("running simulation")
@@ -571,7 +578,7 @@ transaction now can be sent to network with:
 
 %s
 
-- - 8< - - 
+- - 8< - -
 `,
 		shell.Highlight(presignerCmd), shell.Highlight(castCmd))
 }

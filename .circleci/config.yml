@@ -18,8 +18,34 @@ jobs:
       - checkout
       - run: go test ./...
 
+  e2e-test:
+    docker:
+      - image: golang:1.21-alpine
+    working_directory: /go/src/github.com/ethereum-optimism/presigner
+    steps:
+      - checkout
+      - run:
+          command: |
+            # test sign --private-key
+            go run presigner.go \
+              --json-file tx/example.json \
+              --private-key 0000000000000000000000000000000000000000000000000000000000000000 \
+              sign
+            # test sign --mnemonic
+            go run presigner.go \
+              --json-file tx/example.json \
+              --mnemonic "test test test test test test test test test test test junk"
+              sign
+            # test sign --sender override
+            go run presigner.go \
+              --json-file tx/example.json \
+              --mnemonic "test test test test test test test test test test test junk"
+              --sender 0xE7dEA1306D9F829bA469d1904c50903b46ebd02e
+              sign
+
 workflows:
   build_test:
     jobs:
       - build
       - test
+      - e2e-test
