@@ -71,7 +71,7 @@ func main() {
 	flag.BoolVar(&ledger, "ledger", false, "Use ledger device for signing or executing")
 	flag.StringVar(&mnemonic, "mnemonic", "", "Mnemonic to use for signing or executing")
 	flag.StringVar(&hdPath, "hd-paths", "m/44'/60'/0'/0/0", "Hierarchical deterministic derivation path for mnemonic or ledger, for signing or executing")
-	flag.StringVar(&senderAddr, "sender-addr", "", "Address of the --sender to pass to forge")
+	flag.StringVar(&senderAddr, "sender", "", "Address of the --sender to pass to forge")
 
 
 	flag.Parse()
