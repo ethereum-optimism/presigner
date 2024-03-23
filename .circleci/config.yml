@@ -35,6 +35,16 @@ jobs:
             go install
             cd ..
             make deps
+            go run presigner.go \
+              --json-file tx/2023-11-06-goerli-pause-3.json \
+              --chain 1 \
+              --rpc-url https://ethereum-goerli.publicnode.com \
+              --target-addr 0x95703e0982140d16f8eba6d158fccede42f04a4c \
+              --safe-addr 0x9BA6e03D8B90dE867373Db8cF1A58d2F7F006b3A \
+              --safe-nonce 93 \
+              --json-file tx/example.json \
+              create
+
             # test sign --mnemonic
             go run presigner.go \
               --json-file tx/example.json \
