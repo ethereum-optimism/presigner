@@ -319,7 +319,6 @@ func main() {
 
 		tx.Data = extractData(outBuffer)
 
-
 		// sign the payload
 		outBuffer, _, err = shell.Run(workdir, "eip712sign", []string{}, tx.Data+"\n", false, signingFlags...)
 		if err != nil {
