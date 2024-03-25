@@ -29,9 +29,9 @@ type TxState struct {
 	SafeNonce  string `json:"safe_nonce"`
 	TargetAddr string `json:"target_addr"`
 	ScriptName string `json:"script_name"`
-	Data       string `json:"data"`
 
 	// populated by sign
+	Data       string `json:"data"`
 	Signatures []TxSignature `json:"signatures,omitempty"`
 
 	// populated by simulate
@@ -239,7 +239,6 @@ func main() {
 			SafeNonce:  safeNonce,
 			TargetAddr: targetAddr,
 			ScriptName: scriptName,
-			Data:       extractData(outBuffer),
 			Signatures: nil,
 		}
 
@@ -317,6 +316,8 @@ func main() {
 			"--chain-id", tx.ChainId,
 			"--sender", signer,
 			"--via-ir")
+
+		tx.Data = extractData(outBuffer)
 
 		// sign the payload
 		outBuffer, _, err = shell.Run(workdir, "eip712sign", []string{}, tx.Data+"\n", false, signingFlags...)

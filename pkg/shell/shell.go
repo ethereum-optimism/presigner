@@ -15,6 +15,7 @@ func Run(workdir, name string, env []string, in string, silent bool, args ...str
 	cmd := exec.Command(name, args...)
 	cmd.Dir = workdir
 
+	cmd.Env = os.Environ()
 	if len(env) > 0 {
 		cmd.Env = append(cmd.Env, env...)
 	}
