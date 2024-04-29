@@ -16,9 +16,9 @@ contract CallPause is MultisigBuilder {
         IMulticall3.Call3[] memory calls = new IMulticall3.Call3[](1);
 
         calls[0] = IMulticall3.Call3({
-            target: _superchainConfigAddr(),
+            target: _deputyGuardianModuleAddr(),
             allowFailure: false,
-            callData: abi.encodeCall(Pausable.pause, ("presigner"))
+            callData: abi.encodeCall(Pausable.pause, ())
         });
 
         return calls;
@@ -28,7 +28,7 @@ contract CallPause is MultisigBuilder {
         return vm.envAddress("SAFE_ADDR");
     }
 
-    function _superchainConfigAddr() internal view returns (address) {
+    function _deputyGuardianModuleAddr() internal view returns (address) {
         return vm.envAddress("TARGET_ADDR");
     }
 }
