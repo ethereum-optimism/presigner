@@ -18,6 +18,15 @@ jobs:
       - checkout
       - run: go test ./...
 
+  format:
+    docker:
+      - image: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:v0.35.0
+    working_directory: /go/src/github.com/ethereum-optimism/presigner
+    steps:
+      - checkout
+      - run:
+          command: forge fmt --check
+
   e2e-test:
     circleci_ip_ranges: true
     docker:
@@ -62,4 +71,5 @@ workflows:
     jobs:
       - build
       - test
+      - format
       - e2e-test
