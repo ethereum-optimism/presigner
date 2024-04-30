@@ -2,6 +2,11 @@
 
 version: 2.1
 
+parameters:
+  ci_builder_image:
+    type: string
+    default: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:v0.47.3
+
 jobs:
   build:
     docker:
@@ -20,7 +25,7 @@ jobs:
 
   format:
     docker:
-      - image: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:v0.35.0
+      - image: <<pipeline.parameters.ci_builder_image>>
     working_directory: /go/src/github.com/ethereum-optimism/presigner
     steps:
       - checkout
@@ -30,7 +35,7 @@ jobs:
   e2e-test:
     circleci_ip_ranges: true
     docker:
-      - image: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:v0.35.0
+      - image: <<pipeline.parameters.ci_builder_image>>
     working_directory: /go/src/github.com/ethereum-optimism/presigner
     steps:
       - checkout
