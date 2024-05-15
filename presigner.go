@@ -414,9 +414,13 @@ func main() {
 				os.Exit(1)
 			}
 			if otherTx.Data != tx.Data {
-				log.Printf("data mismatch for file: %s\n", otherFile)
-				log.Printf("   %s != %s\n", otherTx.Data, tx.Data)
-				os.Exit(1)
+				if tx.Data == "" {
+					tx.Data = otherTx.Data
+				} else {
+					log.Printf("data mismatch for file: %s\n", otherFile)
+					log.Printf("   %s != %s\n", otherTx.Data, tx.Data)
+					os.Exit(1)
+				}
 			}
 			if otherTx.SafeNonce != tx.SafeNonce {
 				log.Printf("nonce mismatch for file: %s\n", otherFile)
