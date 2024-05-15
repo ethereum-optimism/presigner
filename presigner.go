@@ -414,7 +414,7 @@ func main() {
 				os.Exit(1)
 			}
 			if otherTx.Data != tx.Data {
-				if tx.Data == nil {
+				if tx.Data == "" {
 					tx.Data = otherTx.Data
 				} else {
 					log.Printf("data mismatch for file: %s\n", otherFile)
