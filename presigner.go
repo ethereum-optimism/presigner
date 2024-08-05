@@ -492,6 +492,7 @@ func main() {
 			optFlags = append(optFlags,
 				"--sig", "simulateSigned(bytes)", signatures)
 		}
+		optFlags = append(optFlags, signingFlags...)
 
 		execFlags := []string{
 			"script",
