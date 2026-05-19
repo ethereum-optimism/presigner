@@ -33,7 +33,6 @@ jobs:
           command: forge fmt --check
 
   e2e-test:
-    circleci_ip_ranges: true
     docker:
       - image: <<pipeline.parameters.ci_builder_image>>
     working_directory: /go/src/github.com/ethereum-optimism/presigner
@@ -45,7 +44,7 @@ jobs:
             make deps
             go run presigner.go \
               --chain 1 \
-              --rpc-url "https://ci-mainnet-l1.optimism.io" \
+              --rpc-url "$OP_CI_MAINNET_L1_RPC_URL" \
               --target-addr 0x95703e0982140d16f8eba6d158fccede42f04a4c \
               --safe-addr 0x9BA6e03D8B90dE867373Db8cF1A58d2F7F006b3A \
               --safe-nonce 1000 \
@@ -77,4 +76,6 @@ workflows:
       - build
       - test
       - format
-      - e2e-test
+      - e2e-test:
+          context:
+            - circleci-repo-rpc-secrets
